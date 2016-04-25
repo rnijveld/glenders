@@ -1,0 +1,9 @@
+[package]
+authors = ["Ruben Nijveld <ruben@gewooniets.nl>"]
+name = "renderall"
+version = "0.1.0"
+
+[dependencies]
+glium = "*"
+image = "*"
+yaml-rust = "*"
