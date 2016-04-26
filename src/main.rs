@@ -18,7 +18,7 @@ fn main() {
     });
 
     let (width, height) = config["graphics"]["dimensions"].unwrap_or((800, 600));
-    let strs: Vec<&str> = config["strs"].unwrap_or(Vec::new());
+    let strs: (&str, &str, &str, &str) = config["strs"].unwrap();
     println!("{:?}", strs);
     // let fullscreen = config["graphics"]["fullscreen"].unwrap_or(false);
     // let dims: [f64; 4] = config["dims"].unwrap_or_else(|| [0.0; 4]);

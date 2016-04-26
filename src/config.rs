@@ -225,8 +225,8 @@ impl<'a, T> ConfigGet<'a, Vec<T>> for Config where Config: ConfigGet<'a, T>
         match *self {
             Config::Array(ref a) => {
                 let mut v: Vec<T> = Vec::new();
-                for i in 0..a.len() {
-                    let maybe_val = self[i].get();
+                for ref elem in a {
+                    let maybe_val = elem.get();
 
                     match maybe_val {
                         Some(val) => v.push(val),
@@ -241,13 +241,13 @@ impl<'a, T> ConfigGet<'a, Vec<T>> for Config where Config: ConfigGet<'a, T>
 }
 
 impl<'a, T, U> ConfigGet<'a, (T, U)> for Config
-    where for<'b> Config: ConfigGet<'b, T> + ConfigGet<'b, U>
+    where Config: ConfigGet<'a, T> + ConfigGet<'a, U>
 {
-    fn get(&self) -> Option<(T, U)> {
+    fn get(&'a self) -> Option<(T, U)> {
         match *self {
             Config::Array(ref a) if a.len() == 2 => {
-                let x = self[0].get();
-                let y = self[1].get();
+                let x = a[0].get();
+                let y = a[1].get();
                 if x.is_none() || y.is_none() {
                     None
                 } else {
@@ -260,14 +260,14 @@ impl<'a, T, U> ConfigGet<'a, (T, U)> for Config
 }
 
 impl<'a, T, U, V> ConfigGet<'a, (T, U, V)> for Config
-    where for<'b> Config: ConfigGet<'b, T> + ConfigGet<'b, U> + ConfigGet<'b, V>
+    where Config: ConfigGet<'a, T> + ConfigGet<'a, U> + ConfigGet<'a, V>
 {
-    fn get(&self) -> Option<(T, U, V)> {
+    fn get(&'a self) -> Option<(T, U, V)> {
         match *self {
             Config::Array(ref a) if a.len() == 3 => {
-                let x = self[0].get();
-                let y = self[1].get();
-                let z = self[2].get();
+                let x = a[0].get();
+                let y = a[1].get();
+                let z = a[2].get();
                 if x.is_none() || y.is_none() || z.is_none() {
                     None
                 } else {
@@ -280,15 +280,15 @@ impl<'a, T, U, V> ConfigGet<'a, (T, U, V)> for Config
 }
 
 impl<'a, S, T, U, V> ConfigGet<'a, (S, T, U, V)> for Config
-    where for<'b> Config: ConfigGet<'b, S> + ConfigGet<'b, T> + ConfigGet<'b, U> + ConfigGet<'b, V>
+    where Config: ConfigGet<'a, S> + ConfigGet<'a, T> + ConfigGet<'a, U> + ConfigGet<'a, V>
 {
     fn get(&'a self) -> Option<(S, T, U, V)> {
         match *self {
             Config::Array(ref a) if a.len() == 4 => {
-                let w = self[0].get();
-                let x = self[1].get();
-                let y = self[2].get();
-                let z = self[3].get();
+                let w = a[0].get();
+                let x = a[1].get();
+                let y = a[2].get();
+                let z = a[3].get();
 
                 if w.is_none() || x.is_none() || y.is_none() || z.is_none() {
                     None
@@ -305,7 +305,7 @@ impl<'a, T> ConfigGet<'a, [T; 1]> for Config where Config: ConfigGet<'a, T> {
     fn get(&'a self) -> Option<[T; 1]> {
         match *self {
             Config::Array(ref a) if a.len() == 1 => {
-                let x = self[0].get();
+                let x = a[0].get();
                 if x.is_none() {
                     None
                 } else {
@@ -321,8 +321,8 @@ impl<'a, T> ConfigGet<'a, [T; 2]> for Config where Config: ConfigGet<'a, T> {
     fn get(&'a self) -> Option<[T; 2]> {
         match *self {
             Config::Array(ref a) if a.len() == 2 => {
-                let x = self[0].get();
-                let y = self[1].get();
+                let x = a[0].get();
+                let y = a[1].get();
 
                 if x.is_none() || y.is_none() {
                     None
@@ -339,9 +339,9 @@ impl<'a, T> ConfigGet<'a, [T; 3]> for Config where Config: ConfigGet<'a, T> {
     fn get(&'a self) -> Option<[T; 3]> {
         match *self {
             Config::Array(ref a) if a.len() == 3 => {
-                let x = self[0].get();
-                let y = self[1].get();
-                let z = self[2].get();
+                let x = a[0].get();
+                let y = a[1].get();
+                let z = a[2].get();
 
                 if x.is_none() || y.is_none() || z.is_none() {
                     None
@@ -358,10 +358,10 @@ impl<'a, T> ConfigGet<'a, [T; 4]> for Config where Config: ConfigGet<'a, T> {
     fn get(&'a self) -> Option<[T; 4]> {
         match *self {
             Config::Array(ref a) if a.len() == 4 => {
-                let w = self[0].get();
-                let x = self[1].get();
-                let y = self[2].get();
-                let z = self[3].get();
+                let w = a[0].get();
+                let x = a[1].get();
+                let y = a[2].get();
+                let z = a[3].get();
 
                 if w.is_none() || x.is_none() || y.is_none() || z.is_none() {
                     None
