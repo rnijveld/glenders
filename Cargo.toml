@@ -1,6 +1,6 @@
 [package]
 authors = ["Ruben Nijveld <ruben@gewooniets.nl>"]
-name = "renderall"
+name = "glenders"
 version = "0.1.0"
 
 [dependencies]
