@@ -3,3 +3,9 @@ graphics:
   height: 600
   dimensions: [800, 600]
   fullscreen: false
+dims: [4.5, 5.8, 7.5, 3]
+strs:
+  - "a list"
+  - "of some strings"
+  - "of small lengths"
+  - "totalling 4 strings"
