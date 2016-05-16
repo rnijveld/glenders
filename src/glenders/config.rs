@@ -5,6 +5,7 @@ use std::io::Read;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::ops::Index;
+use std::path::Path;
 
 pub trait ConfigGet<'a, T> {
     fn get(&'a self) -> Option<T>;
@@ -39,7 +40,7 @@ pub enum Config {
     Array(Vec<Config>),
     Hash(BTreeMap<Config, Config>),
     Null,
-    Invalid
+    Invalid,
 }
 
 impl Config {
@@ -102,6 +103,15 @@ impl Config {
     pub fn is_numeric(&self) -> bool {
         self.is_real() || self.is_int()
     }
+
+    pub fn remove_key(&mut self, key: &str) {
+        match *self {
+            Config::Hash(ref mut h) => {
+                h.remove(&Config::String(key.to_owned()));
+            }
+            _ => (),
+        }
+    }
 }
 
 impl<'a> ConfigGet<'a, i64> for Config {
@@ -125,8 +135,9 @@ impl<'a> ConfigGet<'a, u64> for Config {
 impl<'a> ConfigGet<'a, isize> for Config {
     fn get(&'a self) -> Option<isize> {
         match *self {
-            Config::Int(i) if i >= isize::min_value() as i64 &&
-                              i <= isize::max_value() as i64 => Some(i as isize),
+            Config::Int(i) if i >= isize::min_value() as i64 && i <= isize::max_value() as i64 => {
+                Some(i as isize)
+            }
             _ => None,
         }
     }
@@ -135,8 +146,7 @@ impl<'a> ConfigGet<'a, isize> for Config {
 impl<'a> ConfigGet<'a, usize> for Config {
     fn get(&'a self) -> Option<usize> {
         match *self {
-            Config::Int(i) if i >= 0 &&
-                              i <= usize::max_value() as i64 => Some(i as usize),
+            Config::Int(i) if i >= 0 && i <= usize::max_value() as i64 => Some(i as usize),
             _ => None,
         }
     }
@@ -145,8 +155,7 @@ impl<'a> ConfigGet<'a, usize> for Config {
 impl<'a> ConfigGet<'a, u32> for Config {
     fn get(&'a self) -> Option<u32> {
         match *self {
-            Config::Int(i) if i >= 0 &&
-                              i <= u32::max_value() as i64 => Some(i as u32),
+            Config::Int(i) if i >= 0 && i <= u32::max_value() as i64 => Some(i as u32),
             _ => None,
         }
     }
@@ -169,7 +178,7 @@ impl<'a> ConfigGet<'a, f32> for Config {
                     Ok(f) => Some(f),
                     _ => None,
                 }
-            },
+            }
             Config::Int(i) => Some(i as f32),
             _ => None,
         }
@@ -184,7 +193,7 @@ impl<'a> ConfigGet<'a, f64> for Config {
                     Ok(f) => Some(f),
                     _ => None,
                 }
-            },
+            }
             Config::Int(i) => Some(i as f64),
             _ => None,
         }
@@ -194,8 +203,9 @@ impl<'a> ConfigGet<'a, f64> for Config {
 impl<'a> ConfigGet<'a, i32> for Config {
     fn get(&'a self) -> Option<i32> {
         match *self {
-            Config::Int(i) if i >= i32::min_value() as i64 &&
-                              i <= i32::max_value() as i64 => Some(i as i32),
+            Config::Int(i) if i >= i32::min_value() as i64 && i <= i32::max_value() as i64 => {
+                Some(i as i32)
+            }
             _ => None,
         }
     }
@@ -219,7 +229,10 @@ impl<'a> ConfigGet<'a, &'a str> for Config {
     }
 }
 
-impl<'a, T> ConfigGet<'a, Vec<T>> for Config where Config: ConfigGet<'a, T>
+/// Retrieve a vector of arbitrairy length from the config.
+/// Vectors can only be retrieved from arrays.
+impl<'a, T> ConfigGet<'a, Vec<T>> for Config
+    where Config: ConfigGet<'a, T>
 {
     fn get(&'a self) -> Option<Vec<T>> {
         match *self {
@@ -240,6 +253,8 @@ impl<'a, T> ConfigGet<'a, Vec<T>> for Config where Config: ConfigGet<'a, T>
     }
 }
 
+/// Retrieve a tuple of 2 elements from the config.
+/// Note that this requires the config to contain an array of values.
 impl<'a, T, U> ConfigGet<'a, (T, U)> for Config
     where Config: ConfigGet<'a, T> + ConfigGet<'a, U>
 {
@@ -259,6 +274,8 @@ impl<'a, T, U> ConfigGet<'a, (T, U)> for Config
     }
 }
 
+/// Retrieve a tuple of 3 elements from the config.
+/// Note that this requires the config to contain an array of values.
 impl<'a, T, U, V> ConfigGet<'a, (T, U, V)> for Config
     where Config: ConfigGet<'a, T> + ConfigGet<'a, U> + ConfigGet<'a, V>
 {
@@ -279,6 +296,8 @@ impl<'a, T, U, V> ConfigGet<'a, (T, U, V)> for Config
     }
 }
 
+/// Retrieve a tuple of 4 elements from the config.
+/// Note that this requires the config to contain an array of values.
 impl<'a, S, T, U, V> ConfigGet<'a, (S, T, U, V)> for Config
     where Config: ConfigGet<'a, S> + ConfigGet<'a, T> + ConfigGet<'a, U> + ConfigGet<'a, V>
 {
@@ -301,7 +320,10 @@ impl<'a, S, T, U, V> ConfigGet<'a, (S, T, U, V)> for Config
     }
 }
 
-impl<'a, T> ConfigGet<'a, [T; 1]> for Config where Config: ConfigGet<'a, T> {
+/// Retrieve an array with a single element from the config.
+impl<'a, T> ConfigGet<'a, [T; 1]> for Config
+    where Config: ConfigGet<'a, T>
+{
     fn get(&'a self) -> Option<[T; 1]> {
         match *self {
             Config::Array(ref a) if a.len() == 1 => {
@@ -317,7 +339,10 @@ impl<'a, T> ConfigGet<'a, [T; 1]> for Config where Config: ConfigGet<'a, T> {
     }
 }
 
-impl<'a, T> ConfigGet<'a, [T; 2]> for Config where Config: ConfigGet<'a, T> {
+/// Retrieve an array of 2 elements from the config.
+impl<'a, T> ConfigGet<'a, [T; 2]> for Config
+    where Config: ConfigGet<'a, T>
+{
     fn get(&'a self) -> Option<[T; 2]> {
         match *self {
             Config::Array(ref a) if a.len() == 2 => {
@@ -335,7 +360,10 @@ impl<'a, T> ConfigGet<'a, [T; 2]> for Config where Config: ConfigGet<'a, T> {
     }
 }
 
-impl<'a, T> ConfigGet<'a, [T; 3]> for Config where Config: ConfigGet<'a, T> {
+/// Retrieve an array of 3 elements from the config.
+impl<'a, T> ConfigGet<'a, [T; 3]> for Config
+    where Config: ConfigGet<'a, T>
+{
     fn get(&'a self) -> Option<[T; 3]> {
         match *self {
             Config::Array(ref a) if a.len() == 3 => {
@@ -354,7 +382,10 @@ impl<'a, T> ConfigGet<'a, [T; 3]> for Config where Config: ConfigGet<'a, T> {
     }
 }
 
-impl<'a, T> ConfigGet<'a, [T; 4]> for Config where Config: ConfigGet<'a, T> {
+/// Retrieve an array of 4 elements from the config.
+impl<'a, T> ConfigGet<'a, [T; 4]> for Config
+    where Config: ConfigGet<'a, T>
+{
     fn get(&'a self) -> Option<[T; 4]> {
         match *self {
             Config::Array(ref a) if a.len() == 4 => {
@@ -374,8 +405,11 @@ impl<'a, T> ConfigGet<'a, [T; 4]> for Config where Config: ConfigGet<'a, T> {
     }
 }
 
+/// Standard value for when a path does not exist in the config
 static INVALID_VALUE: Config = Config::Invalid;
-impl <'a> Index<&'a str> for Config {
+
+/// Allow indexing over hashmap keys
+impl<'a> Index<&'a str> for Config {
     type Output = Config;
 
     fn index(&self, idx: &'a str) -> &Config {
@@ -387,6 +421,7 @@ impl <'a> Index<&'a str> for Config {
     }
 }
 
+/// Allow indexing over arrays
 impl Index<usize> for Config {
     type Output = Config;
 
@@ -399,6 +434,7 @@ impl Index<usize> for Config {
 }
 
 impl Config {
+    /// Read the yaml contents into this config, consuming the yaml structure.
     pub fn from_yaml(yaml: Yaml) -> Config {
         match yaml {
             Yaml::Real(r) => Config::Real(r),
@@ -420,17 +456,52 @@ impl Config {
                     res.insert(Config::from_yaml(key), Config::from_yaml(value));
                 }
                 Config::Hash(res)
-            },
+            }
             Yaml::Alias(_) => panic!("Aliases in yaml file not supported"),
         }
     }
 
+    /// Creates a new empty config.
     pub fn new() -> Config {
         Config::Null
     }
 
-    pub fn from_yaml_file_or_empty(filename: &str) -> io::Result<Config> {
-        match OpenOptions::new().read(true).open(filename) {
+    /// Merge two configurations together into one configuration.
+    /// Values inside self are overwritten by values in the other config. However, if a value
+    /// is both a hash on self and the other side, then keys are merged instead.
+    pub fn merge(self, other: Config) -> Config {
+        match (self, other) {
+            (Config::Hash(mut orig), Config::Hash(new)) => {
+                for (key, mut value) in new {
+                    if orig.contains_key(&key) {
+                        value = orig.remove(&key).unwrap().merge(value);
+                    }
+                    orig.insert(key, value);
+                }
+                Config::Hash(orig)
+            }
+            (_, new) => new,
+        }
+    }
+
+    /// Determine the file type of the given path and read the contents into a config.
+    pub fn from_file<P: AsRef<Path>>(filename: P) -> io::Result<Config> {
+        match filename.as_ref().extension().and_then(|ext| ext.to_str()) {
+            Some("yml") => Config::from_yaml_file(filename),
+            _ => {
+                Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                   "Unkown filetype, supported: yml"))
+            }
+        }
+    }
+    /// Read config file on the given path as yaml.
+    /// The file must exist. If the file content is empty, a config without any entries is
+    /// assumed.
+    pub fn from_yaml_file<P: AsRef<Path>>(filename: P) -> io::Result<Config> {
+        let path = filename.as_ref().clone();
+        let dir = path.parent().unwrap_or_else(|| Path::new("."));
+
+        match OpenOptions::new().read(true).open(path) {
             // found file, get contents
             Ok(mut file) => {
                 let mut content = String::new();
@@ -440,7 +511,24 @@ impl Config {
                 match YamlLoader::load_from_str(content.as_str()) {
                     Ok(mut yamls) => {
                         match yamls.pop() {
-                            Some(yaml) => Ok(Config::from_yaml(yaml)),
+                            Some(yaml) => {
+                                let mut config = Config::from_yaml(yaml);
+                                if config["includes"].is_array() {
+                                    let includes: Vec<String> = config["includes"]
+                                                                    .unwrap_or_else(|| Vec::new());
+                                    config.remove_key("includes");
+
+                                    for include in includes {
+                                        match Config::from_file(dir.join(include)) {
+                                            Ok(included_config) => {
+                                                config = config.merge(included_config)
+                                            }
+                                            Err(e) => return Err(e),
+                                        }
+                                    }
+                                }
+                                Ok(config)
+                            }
 
                             // empty document, we'll asume null yaml structure
                             None => Ok(Config::new()),
@@ -449,11 +537,6 @@ impl Config {
                     Err(e) => Err(io::Error::new(io::ErrorKind::InvalidData, e.description())),
                 }
             }
-
-            // file not found, we'll asume null yaml structure
-            Err(ref e) if e.kind() == io::ErrorKind::NotFound => Ok(Config::new()),
-
-            // another kind of error
             Err(e) => Err(e),
         }
     }

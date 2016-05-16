@@ -3,7 +3,16 @@ authors = ["Ruben Nijveld <ruben@gewooniets.nl>"]
 name = "glenders"
 version = "0.1.0"
 
+[[bin]]
+name = "example"
+path = "src/main.rs"
+
 [dependencies]
 glium = "*"
 image = "*"
+nalgebra = "*"
 yaml-rust = "*"
+
+[lib]
+name = "glenders"
+path = "src/glenders/lib.rs"
